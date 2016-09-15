@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>jquery test</title>
+    <script type="text/javascript" src="../node_modules/jquery/dist/jquery.js"></script>
+</head>
+<body>
+<div class="wrap">
+    <ul class="items no">
+        <li class="item " id="item1">1</li>
+        <li class="item hero" id="item2">2</li>
+        <li class="item" id="item3">3</li>
+        <li class="item" id="item4">4</li>
+        <li class="item no" id="item5">5</li>
+    </ul>
+</div>
+
+<script>
+    $(function () {
+        function log(watch) {
+            return console.log(watch);
+        }
+
+        $('.items li').css("background", "black");
+        $('#item1').css("background", "yellow");
+
+        $('.item').each(function(index,elem){
+            log(index);
+            log(elem);
+        });
+
+        ['aa','bb','cc'].forEach(function(elem,index,array){
+            log(index);
+            log(elem);
+        });
+
+        // log($('.items li ').css("background"));
+        // log($('#item2'));
+
+        // log($('.item').addClass('no'));
+        //console.log($('#item5').parent().contains("hero"));
+    })
+</script>
+</body>
+</html>
