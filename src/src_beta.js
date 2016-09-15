@@ -23,7 +23,7 @@
             }
 
             if (typeof selector == 'object') {
-                var selector = [selector];
+                selector = [selector];
                 for (var i = 0; i < selector.length; i++) {
                     this[i] = selector[i];
                 }
@@ -94,7 +94,7 @@
             }
         },
 
-        text:function(value){
+        text: function (value) {
             if (!value && this[0].nodeType === 1) {
                 return this[0].innerText;
             } else {
@@ -108,33 +108,33 @@
          * dom 操作方法
          *
          * */
-        append:function(str){
-            for (var i = 0 ;i<this.length;i++){
-                domAppend(this[i],'beforeEnd',str);
+        append: function (str) {
+            for (var i = 0; i < this.length; i++) {
+                domAppend(this[i], 'beforeEnd', str);
             }
             return this;
         },
-        before:function(){
-            for (var i = 0 ;i<this.length;i++){
-                domAppend(this[i],'beforeBegin',str);
+        before: function (str) {
+            for (var i = 0; i < this.length; i++) {
+                domAppend(this[i], 'beforeBegin', str);
             }
 
             return this;
         },
-        after:function(){
-            for (var i = 0 ;i<this.length;i++){
-                domAppend(this[i],'afterEnd',str);
+        after: function (str) {
+            for (var i = 0; i < this.length; i++) {
+                domAppend(this[i], 'afterEnd', str);
             }
             return this;
         },
-        insert:function(){
-            for (var i = 0 ;i<this.length;i++){
-                domAppend(this[i],'afterBegin',str);
+        insert: function (str) {
+            for (var i = 0; i < this.length; i++) {
+                domAppend(this[i], 'afterBegin', str);
             }
             return this;
         },
-        remove:function(){
-            for(var i = 0 ;i<this.length;i++){
+        remove: function () {
+            for (var i = 0; i < this.length; i++) {
                 this[i].parentNode.removeChild(this[i]);
             }
             return this;
@@ -303,6 +303,63 @@
             }
             a.length = i;
             return a;
+        },
+
+        on: function (type, selector, fn) {
+            if (typeof selector == 'function') {
+                //只传入两个参数
+                fn = selector;
+                for (var i = 0; i < this.length; i++) {
+                    if (!this[i].guid) {
+                        this[i].guid = ++Chill.guid;
+                        //如果当前的dom节点不存在标识符，则分配
+
+                        //开辟一个新对象存储 当前dom节点的所有事件
+                        Chill.Events[Chill.guid] = {};
+
+                        //同类型事件开辟一个队列
+                        Chill.Events[chill.guid][type] = [fn];
+
+                        //绑定事件
+                        bind(this[i], type, this[i].guid);
+
+                    } else {
+                        //当前标识已经存在，追加事件
+                        var id = this[i].guid;
+                        if (Chill.Events[id][type]) {
+                            Chill.Events[id][type].push(fn);
+                        } else {
+                            //新事件
+                            Chill.Events[id][type] = [fn];
+                            bind(this[i], type, this[i].guid);
+                        }
+                    }
+                }
+            }
+        },
+
+        off: function (type, selector) {
+            //没有传参 取消所有事件绑定
+            if (arguments.length === 0) {
+                for (var i = 0; i < this.length; i++) {
+                    var id = this[i].guid;
+                    if (id) {
+                        for (var ev in Chill.Events[id]) {
+                            delete Chill.Events[id][ev];
+                        }
+                    }
+                }
+            } else if (arguments.length == 1) {
+                //传递一个参数取消绑定指定类型的事件
+                for (var i = 0; i < this.length; i++) {
+                    var id = this[i].guid;
+                    if (id) {
+                        delete Chill.Events[guid][type];
+                    }
+                }
+            } else {
+                //解除为委托
+            }
         }
 
 
@@ -312,6 +369,8 @@
     //init的引入是拓展 $.extend 和 $.fn.extend 方法是为了统一接口 但是不引入无关的factory方法
     //为了可以调用静态方法
     Chill.prototype.init.prototype = Chill.prototype;
+    Chill.Events = [];
+    Chill.guid = 0;
 
     //静态方法
     Chill.ajax = function (options) {
@@ -453,8 +512,8 @@
     function sibling(currentNode, find) {
         //直到遇到第一个elem的对象或者没找到 返回这个对象
         while ((currentNode = currentNode[find]) && currentNode.nodeType !== 1) {
-            return currentNode;
         }
+        return currentNode;
     }
 
     function isArray(obj) {
@@ -462,9 +521,55 @@
     }
 
     //将str解析成html或者XML type： beforebegin-元素前面 afterbegin-元素的第一个子节点前面 beforeend-元素最后一个子节点前面 afterend-元素的后面
-    function domAppend(elem,type,str){
-        elem.insertAdjacentHTML(type,str);
+    function domAppend(elem, type, str) {
+        elem.insertAdjacentHTML(type, str);
     }
+
+    //事件委托
+    function delegate(agent, type, selector, fn) {
+        agent.addEventListener(type, function (e) {
+            var target = e.target;
+            var curTarget = e.currentTarget;
+            var bubble = true; //是否停止冒泡
+
+            while (bubble && target != curTarget) {
+                //判断当前节点时候触发事件
+                if (filter(agent, selector, target)) {
+                    bubble = fn.call(target, e);
+                    return bubble;
+                }
+                target = target.parentNode;
+            }
+
+        }, false);
+
+        //过滤非事件触发点
+        function filter(agent, selector, target) {
+            var nodes = agent.querySelectorAll(selector);
+            for (var i = 0; i < nodes.length; i++) {
+                if (nodes[i] == target) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /*
+         * 1.有一个储存全局 events 的数组 存放每个 dom 上面的事件
+         * 2.每个 dom 上有唯一的标识符，通过这个标识符 guid 来找到Event数组里的事件
+         * */
+
+    }
+
+    function bind(dom, type, guid) {
+        dom.addEventListener(type, function (e) {
+            for (var i = 0; i < Chill.Events[guid][type].length; i++) {
+                //一次执行时间队列里面的所有函数
+                Chill.Events[guid][type][i].call(dom, e);
+            }
+        })
+    }
+
     //未处理冲突 暴露接口给外部使用
     w.rc = Chill;
 
