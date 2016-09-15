@@ -60,17 +60,125 @@
             }
         },
 
+        //传入的如果是一个对象
         css: function (attr, val) {
-            console.log(this.length);
+            //console.log(this.length);
             for (var i = 0; i < this.length; i++) {
-                //一个参数的时候返回值
-                if (arguments.length === 1) {
-                    return getComputedStyle(this[i], null)[attr]
-                }
 
+                if (typeof attr === 'string') {
+                    //read
+                    if (arguments.length === 1) {
+                        return getComputedStyle(this[i], null)[attr]
+                    }
+                    //write
+                    this[i].style[attr] = val;
+                } else {
+                    var _this = this[i];
+                    w.rc.each(function (attr, val) {
+                        _this.style.cssText += '' + attr + ":" + val + ';';
+                    })
+                }
             }
 
+            return this;
+
         },
+
+        html: function (value) {
+            if (!value && this[0].nodeType === 1) {
+                return this[0].innerHTML;
+            } else {
+                for (var i = 0; i < this.length; i++) {
+                    this[i].innerHTML = value;
+                }
+            }
+        },
+
+        text:function(value){
+            if (!value && this[0].nodeType === 1) {
+                return this[0].innerText;
+            } else {
+                for (var i = 0; i < this.length; i++) {
+                    this[i].innerText = value;
+                }
+            }
+        },
+
+        /**
+         * dom 操作方法
+         *
+         * */
+        append:function(str){
+            for (var i = 0 ;i<this.length;i++){
+                domAppend(this[i],'beforeEnd',str);
+            }
+            return this;
+        },
+        before:function(){
+            for (var i = 0 ;i<this.length;i++){
+                domAppend(this[i],'beforeBegin',str);
+            }
+
+            return this;
+        },
+        after:function(){
+            for (var i = 0 ;i<this.length;i++){
+                domAppend(this[i],'afterEnd',str);
+            }
+            return this;
+        },
+        insert:function(){
+            for (var i = 0 ;i<this.length;i++){
+                domAppend(this[i],'afterBegin',str);
+            }
+            return this;
+        },
+        remove:function(){
+            for(var i = 0 ;i<this.length;i++){
+                this[i].parentNode.removeChild(this[i]);
+            }
+            return this;
+        },
+        attr: function (attr, val) {
+            for (var i = 0; i < this.length; i++) {
+                //上下文是一个对象的时候会只会返回第一个的属性
+                if (typeof attr === 'string') {
+                    if (arguments.length == 1) {
+                        return this[0].getAttribute(attr);
+                    }
+                    this[i].setAttribute(attr, val);
+                } else {
+                    //只传入一个对象
+                    var _this = this[i];
+                    w.rc.each(attr, function (attr, val) {
+                        _this.setAttribute(attr, val);
+                    })
+
+                }
+            }
+            return this;
+        }
+        ,
+        data: function (attr, val) {
+            for (var i = 0; i < this.length; i++) {
+                //上下文是一个对象的时候会只会返回第一个的属性
+                if (typeof attr === 'string') {
+                    if (arguments.length == 1) {
+                        return this[0].getAttribute('data-' + attr);
+                    }
+                    this[i].setAttribute('data-' + attr, val);
+                } else {
+                    //只传入一个对象
+                    var _this = this[i];
+                    w.rc.each(attr, function (attr, val) {
+                        _this.setAttribute('data-' + attr, val);
+                    })
+
+                }
+            }
+            return this;
+        }
+        ,
         hasClass: function (cls) {
             //如有是一个元素判断有没有这个类名 否则遍历所有元素
             if (this[0].classList) {
@@ -84,14 +192,15 @@
 
                 var reg = new RegExp('(\s|^)' + cls + '(\s|$)');
                 for (var i = this.length - 1; i >= 0; i--) {
-                    //!!快速转成boolean
-                    return !!this[i].className.match(reg);
 
+                    if (this[i].className.match(reg)) {
+                        return true;
+                    }
                 }
+                return false;
             }
-            return this;
-        },
-
+        }
+        ,
         addClass: function (cls) {
             if (this[0].classList) {
                 for (var i = this.length - 1; i >= 0; i--) {
@@ -112,8 +221,8 @@
 
             return this;
 
-        },
-
+        }
+        ,
         removeClass: function (cls) {
             var reg = new RegExp('(\\s|^)' + cls + '(\\s|$)');
             for (var i = 0; i < this.length; i++) {
@@ -122,22 +231,25 @@
                 }
             }
             return this;
-        },
-
+        }
+        ,
         find: function (selector) {
             if (!selector) {
                 return;
             }
             var context = this.selector;
             return new Chill(context + ' ' + selector);
-        },
+        }
+        ,
         first: function () {
             return new Chill(this[0]);
-        },
+        }
+        ,
         last: function () {
             var num = this.length - 1;
             return new Chill(this[num]);
-        },
+        }
+        ,
         eq: function (num) {
             // -1 倒数第一个 -2 倒数第二个
             var num = (num < 0 ? this.length - num : num);
@@ -146,7 +258,8 @@
             } else {
                 return new Chill(this[0]);
             }
-        },
+        }
+        ,
         get: function () {
             var num = (num < 0 ? this.length - num : num);
             if (num < this.length - 1 && num >= 0) {
@@ -154,13 +267,16 @@
             } else {
                 return new this[0];
             }
-        },
+        }
+        ,
         next: function () {
             return sibling(this[0], 'nextSibling');
-        },
+        }
+        ,
         prev: function () {
             return sibling(this[0], 'previousSibling')
-        },
+        }
+        ,
         parent: function () {
             var parent = this[0].parentNode;
             //nodeType = 11 -->DocumentFragment
@@ -173,7 +289,8 @@
             a.length = 1;
 
             return a;
-        },
+        }
+        ,
         parents: function () {
             var a = Chill();
             var i = 0;
@@ -344,6 +461,10 @@
         return Array.isArray(obj) || Object.prototype.toString.call(obj) === '[object Array]';
     }
 
+    //将str解析成html或者XML type： beforebegin-元素前面 afterbegin-元素的第一个子节点前面 beforeend-元素最后一个子节点前面 afterend-元素的后面
+    function domAppend(elem,type,str){
+        elem.insertAdjacentHTML(type,str);
+    }
     //未处理冲突 暴露接口给外部使用
     w.rc = Chill;
 
