@@ -124,17 +124,36 @@
             return this;
         },
 
-        find:function(){
-
+        find: function (selector) {
+            if (!selector) {
+                return;
+            }
+            var context = this.selector;
+            return new Chill(context + ' ' + selector);
         },
-        first:function(){
-
+        first: function () {
+            return new Chill(this[0]);
         },
-        last:function(){
-
+        last: function () {
+            var num = this.length - 1;
+            return new Chill(this[num]);
         },
-        eq:function(){
-
+        eq: function (num) {
+            // -1 倒数第一个 -2 倒数第二个
+            var num = (num < 0 ? this.length - num : num);
+            if (num < this.length - 1 && num >= 0) {
+                return new Chill(this[num]);
+            } else {
+                return new Chill(this[0]);
+            }
+        },
+        get: function () {
+            var num = (num < 0 ? this.length - num : num);
+            if (num < this.length - 1 && num >= 0) {
+                return new this[num];
+            } else {
+                return new this[0];
+            }
         },
         next: function () {
             return sibling(this[0], 'nextSibling');
@@ -178,11 +197,104 @@
     Chill.prototype.init.prototype = Chill.prototype;
 
     //静态方法
-    Chill.ajax = function () {
+    Chill.ajax = function (options) {
         //挂载ajax方法
+        var defaultOptions = {
+            url: "",
+            method: "GET",
+            date: {},
+            async: true,
+            success: false,
+            error: false
+        };
 
-        console.log(this);
+        //覆盖默认参数
+        for (var item in defaultOptions) {
+            if (options[item] === undefined) {
+                options[item] = defaultOptions[item];
+            }
+        }
+
+        var xhr = new XMLHttpRequest();
+        var url = options.url;
+        var param = [];
+
+        for (var key in options.data) {
+            param.push(key + '=' + options.data[key]);
+        }
+
+        var postData = param.join("&");
+
+
+        if (options.type.toUpperCase() === "POST") {
+            xhr.open(options.type, url, options.async);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.send(options.data);
+        } else if (options.type.toUpperCase() === "GET") {
+            xhr.open(options.type, url + '?' + postData, options.async);
+            xhr.send(null)
+        }
+
+        xhr.onreadystatechange = onStateChange;
+
+        function onStateChange() {
+            if (xhr.readyState == 4) {
+                var result,
+                    status = xhr.status;
+
+                if (status >= 200 && status < 300 || status == 304) {
+                    result = xhr.responseText;
+
+                    if (window.JSON) {
+                        result = JSON.parse(result);
+                    } else {
+                        result = eval('(' + result + ')');
+                    }
+
+                    ajaxSuccess(result, xhr);
+                } else {
+                    console.log('Error' + status);
+                }
+            }
+        }
+
+
+        function ajaxSuccess(data, xhr) {
+            var status = 'success';
+            //成功回调函数
+            options.success && options.success(data, options, status, xhr);
+            ajaxComplete(status);
+        }
+
+        function ajaxComplete(status) {
+            options.complete && options.complete(status);
+        }
+
+
     };
+
+    Chill.get = function (url, successCb, completeCb) {
+        var option = {
+            url: url,
+            success: successCb,
+            complete: completeCb
+        };
+
+        ajax(option);
+    };
+
+    Chill.post = function (url, data, successCb, completeCb) {
+        var option = {
+            url: url,
+            type: 'POST',
+            data: data,
+            success: successCb,
+            complete: completeCb
+        };
+
+        ajax(option);
+    };
+
     Chill.ready = function (fn) {
         doc.addEventListener('DOMContentLoaded', function () {
             fn && fn();
