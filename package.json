@@ -1,7 +1,7 @@
 {
   "name": "jquery-lite",
   "version": "1.0.0",
-  "description": "最近看了很多框架的东西，有点舍本逐末了，先把jquery弄透",
+  "description": "Try to make my own jquery",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
